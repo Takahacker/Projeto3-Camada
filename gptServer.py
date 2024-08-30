@@ -33,7 +33,7 @@ def main():
 
         if rxBuffer[-3:] == b'\xAA\xBB\xCC':  # Verifica o EOP
             print("Handshake recebido 🤝")
-            ack = struct.pack('>III', 0, 0, 0) + b'\xAA\xBB\xCC'
+            ack = struct.pack('>III', 0, 0, 1) + b'\xAA\xBB\xCC'
             com1.sendData(ack)  # Confirmação do handshake
         else:
             print("❌ Erro no handshake, encerrando comunicação.❌ 😔")

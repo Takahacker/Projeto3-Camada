@@ -20,18 +20,21 @@ def main():
         
         # Handshake
         handshake = cria_datagrama(0, 0, b'')
+        time.sleep(0.5)
         com1.sendData(handshake)
         print("Handshake enviado 🤝")
-        
+        print("Esperando resposta do server 🕒")
         # Espera resposta do server
         timeout = time.time() + 5
         while com1.rx.getIsEmpty():
             if time.time() > timeout:
                 escolha = input("Servidor inativo 😡. Tentar novamente? (S/N): ")
                 if escolha.upper() == "S":
+                    time.sleep(0.5)
                     com1.sendData(handshake)
                     timeout = time.time() + 5
                 else:
+                    print("Encerrando comunicação 😔")
                     com1.disable()
                     return
         
@@ -41,7 +44,6 @@ def main():
         imageR = "./imgs/image.png"
 
         txBuffer = open(imageR, 'rb').read()
-        txBuffer = np.asarray(txBuffer)
         txBufferlen = len(txBuffer)
         
         if txBufferlen % 50 == 0:
@@ -57,6 +59,7 @@ def main():
             
             while True:
                 print(f"Enviando pacote {i+1} de {total_pacotes}")
+                time.sleep(0.5)
                 com1.sendData(pacote)
                 # Espera confirmação do server
                 while com1.rx.getIsEmpty():
@@ -70,6 +73,7 @@ def main():
                     print(f"Pacote {i+1} não confirmado pelo server ❌")
                     escolha = input("Reenviar pacote? (S/N): 🥺 👉👈 ")
                     if escolha.upper() == "N":
+                        print("Encerrando comunicação 😔")
                         com1.disable()
                         return
                     else:
@@ -111,6 +115,7 @@ def main():
         ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         """
         print(superman)
+        print("Encerrando comunicação 😔")
         com1.disable()
 
     except Exception as erro:

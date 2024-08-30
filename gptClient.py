@@ -63,15 +63,29 @@ def main():
                 com1.sendData(pacote)
                 # Espera confirmação do server
                 print("Esperando confirmação do server 🕒")
-                while com1.rx.getIsEmpty():
-                    pass
+                timeout = time.time() + 5
+
+                while com1.rx.getBufferLen() < 15:
+                    if time.time() > timeout:
+                        print(f"Pacote {i+1} não confirmado pelo server devido a TIMEOUT ❌")
+                        escolha = input("Tentar novamente? (S/N): 🥺 👉👈 ")
+                        if escolha.upper() == "N":
+                            print("Encerrando comunicação 😔")
+                            com1.disable()
+                            return
+                        else:
+                            com1.getData(com1.rx.getBufferLen())
+                            com1.sendData(pacote)
+                            print("Esperando confirmação do server 🕒")
+                            timeout = time.time() + 5
+
                 rxBuffer, _ = com1.getData(15)
                 print(f"Confirmação recebida: {rxBuffer}")
                 if rxBuffer[11] == 0x01:
                     print(f"Pacote {i+1} confirmado pelo server ✅")
                     break
                 else:
-                    print(f"Pacote {i+1} não confirmado pelo server ❌")
+                    print(f"Pacote {i+1} não confirmado pelo server devido a NACK ❌")
                     escolha = input("Reenviar pacote? (S/N): 🥺 👉👈 ")
                     if escolha.upper() == "N":
                         print("Encerrando comunicação 😔")

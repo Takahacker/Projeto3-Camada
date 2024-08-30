@@ -67,33 +67,40 @@ def main():
         while True:
             print("Esperando pacote... 📦")
             time.sleep(0.5)
+            start_time = time.time()
+            timeout = 5 
+            while True:
+                current_time = time.time()
+                if current_time - start_time > timeout:
+                    print(f"Timeout atingido para o pacote {i + 1}. Solicitando novamente... ⏳")
+                    com1.getData(com1.rx.getBufferLen())  # Limpa o buffer
+                    start_time = time.time()
+                    continue
+                else:
+                    head, _ = com1.getData(12)
+                    print(f"Datagrama recebido: {rxBuffer.hex()}")
+                    num_pacote, total_pacotes, payload_size = struct.unpack('>III', head)
+                    print(f"Pacote: {num_pacote}, Total de Pacotes: {total_pacotes}, Tamanho do Payload: {payload_size}")
+                    payload, _ = com1.getData(payload_size)  
+                    eop, _ = com1.getData(3)
+                    print(eop)
+                    if eop == b'\xAA\xBB\xCC' and num_pacote == i + 1:
+                        break
+                    else:
+                        print(f"Erro no pacote {i + 1}, solicitando novamente... ❌")
+                        nack = ack = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xaa\xbb\xcc'
+                        com1.sendData(nack)
+                        continue
 
-            head, _ = com1.getData(12)
+            arquivo.append(payload)
+            print(f"Pacote {num_pacote} de {total_pacotes} recebido com sucesso ✅")
+            print("Enviando confirmação... 📨")
+            ack = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xaa\xbb\xcc'
+            print(f"ACK: {ack}")
+            time.sleep(0.5)
+            com1.sendData(ack)
+            i += 1
 
-            print(f"Datagrama recebido: {rxBuffer.hex()}")
-
-            num_pacote, total_pacotes, payload_size = struct.unpack('>III', head)
-            print(f"Pacote: {num_pacote}, Total de Pacotes: {total_pacotes}, Tamanho do Payload: {payload_size}")
-
-            payload, _ = com1.getData(payload_size)  
-            eop, _ = com1.getData(3)
-            print(eop)
-
-            if eop == b'\xAA\xBB\xCC' and num_pacote == i + 1:
-                arquivo.append(payload)
-                print(f"Pacote {num_pacote} de {total_pacotes} recebido com sucesso ✅")
-                print("Enviando confirmação... 📨")
-                ack = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xaa\xbb\xcc'
-                print(f"ACK: {ack}")
-                time.sleep(0.5)
-                com1.sendData(ack)
-                i += 1
-            else:
-                print(f"❌Erro no pacote {num_pacote}. Solicitando novamente... 👉👈")
-                nack = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaa\xbb\xcc'
-                print(f"NACK: {nack}")
-                time.sleep(0.5)
-                com1.sendData(nack)
 
             if num_pacote == total_pacotes:
                 arquivo = b''.join(arquivo)
@@ -131,6 +138,7 @@ def main():
                 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
                 """
                 print(superman)
+                # Salva o arquivo
                 diretorio = "./imgs"
                 if not os.path.exists(diretorio):
                     os.makedirs(diretorio)
@@ -142,10 +150,13 @@ def main():
                     
                 # Abrir imagem usando OpenCV
                 print("Abrindo imagem... 🖼️")
-                img = cv2.imread("recebido.jpg")
-                cv2.imshow("Imagem Recebida", img)
-                cv2.waitKey(0)  # Espera até que qualquer tecla seja pressionada
-                cv2.destroyAllWindows()  # Fecha a janela
+                img = cv2.imread(caminho_arquivo)
+                if img is None or img.size == 0:
+                    print("Erro: Não foi possível abrir a imagem. O arquivo pode estar corrompido ou vazio.")
+                else:
+                    cv2.imshow("Imagem Recebida", img)
+                    cv2.waitKey(0)  # Espera até que qualquer tecla seja pressionada
+                    cv2.destroyAllWindows()  # Fecha a janela
                 break
 
         print("-------------------------")

@@ -67,24 +67,31 @@ def main():
         while True:
             print("Esperando pacote... 📦")
             time.sleep(0.5)
-            rxBuffer, _ = com1.getData(65)
-            
-            head = rxBuffer[:12]
+
+            head, _ = com1.getData(12)
+
+            print(f"Datagrama recebido: {rxBuffer.hex()}")
+
             num_pacote, total_pacotes, payload_size = struct.unpack('>III', head)
-            
-                
-            if rxBuffer[-3:] == b'\xAA\xBB\xCC' and num_pacote == i+1:  # Verifica o EOP
-                payload = rxBuffer[12:-3]
+            print(f"Pacote: {num_pacote}, Total de Pacotes: {total_pacotes}, Tamanho do Payload: {payload_size}")
+
+            payload, _ = com1.getData(payload_size)  
+            eop, _ = com1.getData(3)
+            print(eop)
+
+            if eop == b'\xAA\xBB\xCC' and num_pacote == i + 1:
                 arquivo.append(payload)
                 print(f"Pacote {num_pacote} de {total_pacotes} recebido com sucesso ✅")
                 print("Enviando confirmação... 📨")
-                ack = cria_datagrama(num_pacote, total_pacotes, b'1')
+                ack = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xaa\xbb\xcc'
+                print(f"ACK: {ack}")
                 time.sleep(0.5)
                 com1.sendData(ack)
                 i += 1
             else:
-                print(f"❌Erro no pacote {num_pacote} Solicitando novamente... 👉👈")
-                nack = cria_datagrama(num_pacote, total_pacotes, b'0')
+                print(f"❌Erro no pacote {num_pacote}. Solicitando novamente... 👉👈")
+                nack = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaa\xbb\xcc'
+                print(f"NACK: {nack}")
                 time.sleep(0.5)
                 com1.sendData(nack)
 
@@ -124,8 +131,9 @@ def main():
                 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
                 """
                 print(superman)
-                # Salva o arquivo
-                diretorio = "/imgs"
+                diretorio = "./imgs"
+                if not os.path.exists(diretorio):
+                    os.makedirs(diretorio)
                 caminho_arquivo = os.path.join(diretorio, "recebido.jpg")
                 
                 with open(caminho_arquivo, "wb") as f:

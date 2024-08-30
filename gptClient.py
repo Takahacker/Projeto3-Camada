@@ -37,7 +37,7 @@ def main():
                     print("Encerrando comunicação 😔")
                     com1.disable()
                     return
-        
+        rxBuffer, _ = com1.getData(15)
         print("Handshake recebido 🤝. Iniciando envio dos pacotes 📦.")
 
         # Lê Imagem a ser enviada
@@ -62,11 +62,12 @@ def main():
                 time.sleep(0.5)
                 com1.sendData(pacote)
                 # Espera confirmação do server
+                print("Esperando confirmação do server 🕒")
                 while com1.rx.getIsEmpty():
                     pass
-                rxBuffer, _ = com1.getData(16)
-                payload = rxBuffer[12:-3]
-                if payload == b'1':
+                rxBuffer, _ = com1.getData(15)
+                print(f"Confirmação recebida: {rxBuffer}")
+                if rxBuffer[11] == 0x01:
                     print(f"Pacote {i+1} confirmado pelo server ✅")
                     break
                 else:
